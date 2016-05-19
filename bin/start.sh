@@ -187,16 +187,19 @@ END
 ## used instead of a linked container.
 ##
 associate_postgresql() {
-
-    # Use linked container if specified
-    if [ -n "$POSTGRES_NAME" ]; then
-        POSTGRES_HOSTNAME="$POSTGRES_PORT_5432_TCP_ADDR"
-        POSTGRES_PORT="$POSTGRES_PORT_5432_TCP_PORT"
-    fi
-
-    # Use default port if none specified
-    POSTGRES_PORT="${POSTGRES_PORT-5432}"
-
+	: ${POSTGRES_HOSTNAME:=postgres}
+	# overwrite "POSTGRES_PORT" with default port if using linked container
+	if [ -n "$POSTGRES_ENV_POSTGRES_DB" ]; then
+		POSTGRES_PORT=5432
+	fi
+	# Use default port if none specified
+	: ${POSTGRES_PORT:=5432}"
+    	
+	# if we're linked to Postgres and thus have credentials already, let's use them
+	: ${POSTGRES_USER:=${POSTGRES_ENV_POSTGRES_USER:-postgres}}
+	: ${POSTGRES_PASSWORD:=$POSTGRES_ENV_POSTGRES_PASSWORD}
+	: ${POSTGRES_DATABASE:=${POSTGRES_ENV_POSTGRES_DB:-guacamole}}
+	
     # Verify required connection information is present
     if [ -z "$POSTGRES_HOSTNAME" -o -z "$POSTGRES_PORT" ]; then
         cat <<END
@@ -377,7 +380,7 @@ if [ -n "$MYSQL_DATABASE" ]; then
 fi
 
 # Use PostgreSQL if database specified
-if [ -n "$POSTGRES_DATABASE" ]; then
+if [ -n "$POSTGRES_DATABASE" -o -n "$POSTGRES_ENV_POSTGRES_DB" ]; then
     associate_postgresql
     INSTALLED_AUTH="$INSTALLED_AUTH postgres"
 fi
