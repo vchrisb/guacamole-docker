@@ -93,15 +93,21 @@ set_optional_property() {
 ## instead of a linked container.
 ##
 associate_mysql() {
-
-    # Use linked container if specified
-    if [ -n "$MYSQL_NAME" ]; then
-        MYSQL_HOSTNAME="$MYSQL_PORT_3306_TCP_ADDR"
-        MYSQL_PORT="$MYSQL_PORT_3306_TCP_PORT"
-    fi
-
-    # Use default port if none specified
-    MYSQL_PORT="${MYSQL_PORT-3306}"
+	: ${MYSQL_HOSTNAME:=mysql}
+	# overwrite "MYSQL_PORT" with default port if using linked container
+	if [ -n "$MYSQL_ENV_MYSQL_DATABASE" ]; then
+		MYSQL_PORT=3306
+	fi
+	# Use default port if none specified
+    : ${MYSQL_PORT:=3306}"
+    	
+	# if we're linked to MySQL and thus have credentials already, let's use them
+	: ${MYSQL_USER:=${MYSQL_ENV_MYSQL_USER:-root}}
+	if [ "$MYSQL_USER" = 'root' ]; then
+		: ${MYSQL_PASSWORD:=$MYSQL_ENV_MYSQL_ROOT_PASSWORD}
+	fi
+	: ${MYSQL_PASSWORD:=$MYSQL_ENV_MYSQL_PASSWORD}
+	: ${MYSQL_DATABASE:=${MYSQL_ENV_MYSQL_DATABASE:-guacamole}}
 
     # Verify required connection information is present
     if [ -z "$MYSQL_HOSTNAME" -o -z "$MYSQL_PORT" ]; then
@@ -371,7 +377,7 @@ set_property "guacd-port"     "$GUACD_PORT_4822_TCP_PORT"
 INSTALLED_AUTH=""
 
 # Use MySQL if database specified
-if [ -n "$MYSQL_DATABASE" ]; then
+if [ -n "$MYSQL_DATABASE" -o -n "$MYSQL_ENV_MYSQL_DATABASE" ]; then
     associate_mysql
     INSTALLED_AUTH="$INSTALLED_AUTH mysql"
 fi
@@ -410,4 +416,3 @@ fi
 #
 
 start_guacamole
-
