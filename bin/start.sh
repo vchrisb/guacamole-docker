@@ -193,7 +193,7 @@ associate_postgresql() {
 		POSTGRES_PORT=5432
 	fi
 	# Use default port if none specified
-	: ${POSTGRES_PORT:=5432}"
+	: ${POSTGRES_PORT:=5432}
     	
 	# if we're linked to Postgres and thus have credentials already, let's use them
 	: ${POSTGRES_USER:=${POSTGRES_ENV_POSTGRES_USER:-postgres}}
